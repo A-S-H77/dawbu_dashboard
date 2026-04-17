@@ -6,6 +6,7 @@ import CollectionCard from "./CollectionCard";
 import SummaryChart from "./SummaryChart";
 import MetricCard from "./MetricCard";
 import CreativeDashboard from "./creative/CreativeDashboard";
+import AdvancedDashboard from "./advanced/AdvancedDashboard";
 
 function fmt(n: number, decimals = 0): string {
   return new Intl.NumberFormat("en-IN", {
@@ -14,7 +15,7 @@ function fmt(n: number, decimals = 0): string {
   }).format(n);
 }
 
-type Tab = "performance" | "creative";
+type Tab = "performance" | "creative" | "advanced";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<Tab>("performance");
@@ -152,6 +153,16 @@ export default function Dashboard() {
             >
               Creative Analysis
             </button>
+            <button
+              onClick={() => setActiveTab("advanced")}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === "advanced"
+                  ? "bg-emerald-600 text-white"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              Advanced Analytics
+            </button>
           </div>
         </div>
       </header>
@@ -222,6 +233,11 @@ export default function Dashboard() {
         {/* ============ CREATIVE ANALYSIS TAB ============ */}
         {activeTab === "creative" && (
           <CreativeDashboard since={since} until={until} />
+        )}
+
+        {/* ============ ADVANCED ANALYTICS TAB ============ */}
+        {activeTab === "advanced" && (
+          <AdvancedDashboard since={since} until={until} />
         )}
       </main>
     </div>

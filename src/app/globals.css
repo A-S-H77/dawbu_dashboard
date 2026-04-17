@@ -12,15 +12,24 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Force light mode always */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: #f9fafb;
+  color: #111827;
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Ensure all text is dark and readable */
+table, td, th, p, span, div, h1, h2, h3, h4, h5, h6, label, input, select, button {
+  color: inherit;
+}
+
+/* Override any Tailwind dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #ffffff;
+    --foreground: #111827;
+    color-scheme: light;
+  }
 }

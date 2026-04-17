@@ -87,13 +87,13 @@ export default function CollectionCard({ collection }: { collection: CollectionS
                       <span className="ml-1 text-[10px] text-gray-400">(adset)</span>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-right">₹{fmt(c.daily_budget)}</td>
-                  <td className="px-3 py-2 text-right">₹{fmt(c.spend, 2)}</td>
-                  <td className="px-3 py-2 text-right">{c.purchases}</td>
-                  <td className="px-3 py-2 text-right">₹{fmt(c.cpr, 2)}</td>
-                  <td className="px-3 py-2 text-right">{fmt(c.roas, 2)}x</td>
-                  <td className="px-3 py-2 text-right">{fmt(c.reach)}</td>
-                  <td className="px-3 py-2 text-right">₹{fmt(c.cpm, 2)}</td>
+                  <td className="px-3 py-2 text-right font-semibold text-gray-900">₹{fmt(c.daily_budget)}</td>
+                  <td className="px-3 py-2 text-right font-semibold text-gray-900">₹{fmt(c.spend, 2)}</td>
+                  <td className="px-3 py-2 text-right font-semibold text-gray-900">{c.purchases}</td>
+                  <td className="px-3 py-2 text-right font-semibold text-gray-900">₹{fmt(c.cpr, 2)}</td>
+                  <td className="px-3 py-2 text-right font-semibold text-gray-900">{fmt(c.roas, 2)}x</td>
+                  <td className="px-3 py-2 text-right font-semibold text-gray-900">{fmt(c.reach)}</td>
+                  <td className="px-3 py-2 text-right font-semibold text-gray-900">₹{fmt(c.cpm, 2)}</td>
                 </tr>
               ))}
             </tbody>

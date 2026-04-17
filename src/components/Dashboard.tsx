@@ -5,6 +5,7 @@ import { groupByCollection, type CampaignData, type CollectionSummary } from "@/
 import CollectionCard from "./CollectionCard";
 import SummaryChart from "./SummaryChart";
 import MetricCard from "./MetricCard";
+import CreativeDashboard from "./creative/CreativeDashboard";
 
 function fmt(n: number, decimals = 0): string {
   return new Intl.NumberFormat("en-IN", {
@@ -13,7 +14,10 @@ function fmt(n: number, decimals = 0): string {
   }).format(n);
 }
 
+type Tab = "performance" | "creative";
+
 export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState<Tab>("performance");
   const [collections, setCollections] = useState<CollectionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,15 +54,19 @@ export default function Dashboard() {
   }, [since, until]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (activeTab === "performance") {
+      fetchData();
+    }
+  }, [fetchData, activeTab]);
 
   // Auto-refresh every 5 minutes
   useEffect(() => {
     if (!autoRefresh) return;
-    const interval = setInterval(fetchData, 5 * 60 * 1000);
+    const interval = setInterval(() => {
+      if (activeTab === "performance") fetchData();
+    }, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [autoRefresh, fetchData]);
+  }, [autoRefresh, fetchData, activeTab]);
 
   // Totals
   const totalBudget = collections.reduce((s, c) => s + c.totalDailyBudget, 0);
@@ -75,107 +83,145 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50">
       {/* Top Bar */}
       <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dawbu Ads Dashboard</h1>
-            <p className="text-xs text-gray-500">Collection-wise Meta Ads Performance</p>
-          </div>
-          <div className="flex items-center gap-4">
-            {/* Date Range */}
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={since}
-                onChange={(e) => setSince(e.target.value)}
-                className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
-              />
-              <span className="text-gray-400">to</span>
-              <input
-                type="date"
-                value={until}
-                onChange={(e) => setUntil(e.target.value)}
-                className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
-              />
+        <div className="mx-auto max-w-7xl px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Dawbu Ads Dashboard</h1>
+              <p className="text-xs text-gray-500">Collection-wise Meta Ads Performance</p>
             </div>
-            {/* Auto-refresh toggle */}
+            <div className="flex items-center gap-4">
+              {/* Date Range */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={since}
+                  onChange={(e) => setSince(e.target.value)}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+                />
+                <span className="text-gray-400">to</span>
+                <input
+                  type="date"
+                  value={until}
+                  onChange={(e) => setUntil(e.target.value)}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+                />
+              </div>
+              {/* Auto-refresh toggle */}
+              <button
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                  autoRefresh
+                    ? "bg-green-100 text-green-700"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {autoRefresh ? "Auto-refresh ON" : "Auto-refresh OFF"}
+              </button>
+              {/* Manual refresh */}
+              {activeTab === "performance" && (
+                <button
+                  onClick={fetchData}
+                  disabled={loading}
+                  className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {loading ? "Loading..." : "Refresh"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="mt-3 flex gap-1 border-t border-gray-100 pt-2">
             <button
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-                autoRefresh
-                  ? "bg-green-100 text-green-700"
-                  : "bg-gray-100 text-gray-600"
+              onClick={() => setActiveTab("performance")}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === "performance"
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-600 hover:bg-gray-100"
               }`}
             >
-              {autoRefresh ? "Auto-refresh ON" : "Auto-refresh OFF"}
+              Collection Performance
             </button>
-            {/* Manual refresh */}
             <button
-              onClick={fetchData}
-              disabled={loading}
-              className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              onClick={() => setActiveTab("creative")}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === "creative"
+                  ? "bg-purple-600 text-white"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
             >
-              {loading ? "Loading..." : "Refresh"}
+              Creative Analysis
             </button>
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6">
-        {/* Error */}
-        {error && (
-          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
-            <p className="font-semibold">Error fetching data</p>
-            <p className="mt-1">{error}</p>
-            {error.includes("credentials") && (
-              <p className="mt-2 text-xs">
-                Set <code className="rounded bg-red-100 px-1">META_ACCESS_TOKEN</code> and{" "}
-                <code className="rounded bg-red-100 px-1">META_AD_ACCOUNT_ID</code> in your{" "}
-                <code className="rounded bg-red-100 px-1">.env.local</code> file.
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Overall Summary */}
-        {!loading && collections.length > 0 && (
+        {/* ============ PERFORMANCE TAB ============ */}
+        {activeTab === "performance" && (
           <>
-            <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-              <MetricCard label="Total Daily Budget" value={`₹${fmt(totalBudget)}`} color="blue" />
-              <MetricCard label="Total Spend" value={`₹${fmt(totalSpend, 2)}`} color="orange" />
-              <MetricCard label="Total Purchases" value={fmt(totalPurchases)} color="green" />
-              <MetricCard label="Overall CPR" value={`₹${fmt(overallCPR, 2)}`} color="red" />
-              <MetricCard label="Overall ROAS" value={`${fmt(overallROAS, 2)}x`} color="purple" />
-              <MetricCard label="Total Campaigns" value={`${totalCampaigns}`} color="cyan" />
-            </div>
+            {/* Error */}
+            {error && (
+              <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+                <p className="font-semibold">Error fetching data</p>
+                <p className="mt-1">{error}</p>
+                {error.includes("credentials") && (
+                  <p className="mt-2 text-xs">
+                    Set <code className="rounded bg-red-100 px-1">META_ACCESS_TOKEN</code> and{" "}
+                    <code className="rounded bg-red-100 px-1">META_AD_ACCOUNT_ID</code> in your{" "}
+                    <code className="rounded bg-red-100 px-1">.env.local</code> file.
+                  </p>
+                )}
+              </div>
+            )}
 
-            {/* Charts */}
-            <div className="mb-6">
-              <SummaryChart collections={collections} />
-            </div>
+            {/* Overall Summary */}
+            {!loading && collections.length > 0 && (
+              <>
+                <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+                  <MetricCard label="Total Daily Budget" value={`₹${fmt(totalBudget)}`} color="blue" />
+                  <MetricCard label="Total Spend" value={`₹${fmt(totalSpend, 2)}`} color="orange" />
+                  <MetricCard label="Total Purchases" value={fmt(totalPurchases)} color="green" />
+                  <MetricCard label="Overall CPR" value={`₹${fmt(overallCPR, 2)}`} color="red" />
+                  <MetricCard label="Overall ROAS" value={`${fmt(overallROAS, 2)}x`} color="purple" />
+                  <MetricCard label="Total Campaigns" value={`${totalCampaigns}`} color="cyan" />
+                </div>
 
-            {/* Collection Cards */}
-            <div className="space-y-6">
-              {collections.map((c) => (
-                <CollectionCard key={c.name} collection={c} />
-              ))}
-            </div>
+                {/* Charts */}
+                <div className="mb-6">
+                  <SummaryChart collections={collections} />
+                </div>
 
-            {/* Footer */}
-            <div className="mt-6 text-center text-xs text-gray-400">
-              Last updated: {fetchedAt} &middot; Data from Meta Marketing API &middot;{" "}
-              {since} to {until}
-            </div>
+                {/* Collection Cards */}
+                <div className="space-y-6">
+                  {collections.map((c) => (
+                    <CollectionCard key={c.name} collection={c} />
+                  ))}
+                </div>
+
+                {/* Footer */}
+                <div className="mt-6 text-center text-xs text-gray-400">
+                  Last updated: {fetchedAt} &middot; Data from Meta Marketing API &middot;{" "}
+                  {since} to {until}
+                </div>
+              </>
+            )}
+
+            {/* Loading State */}
+            {loading && (
+              <div className="flex min-h-[400px] items-center justify-center">
+                <div className="text-center">
+                  <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
+                  <p className="text-sm text-gray-500">Fetching data from Meta...</p>
+                </div>
+              </div>
+            )}
           </>
         )}
 
-        {/* Loading State */}
-        {loading && (
-          <div className="flex min-h-[400px] items-center justify-center">
-            <div className="text-center">
-              <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
-              <p className="text-sm text-gray-500">Fetching data from Meta...</p>
-            </div>
-          </div>
+        {/* ============ CREATIVE ANALYSIS TAB ============ */}
+        {activeTab === "creative" && (
+          <CreativeDashboard since={since} until={until} />
         )}
       </main>
     </div>

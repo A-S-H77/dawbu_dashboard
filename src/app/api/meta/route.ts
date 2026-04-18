@@ -108,10 +108,22 @@ export async function GET(request: NextRequest) {
     const adsetsRes = await metaFetch(adsetsUrl, token);
     const adsets: MetaAdSet[] = adsetsRes.data || [];
 
-    // Step 3: Build campaign data with correct budgets
-    // Group ad sets by campaign
+    // Step 3: Fetch active ads to know which ad sets actually have running ads
+    const adsUrl =
+      `${BASE_URL}/act_${accountId}/ads?` +
+      `fields=id,adset_id` +
+      `&filtering=[{"field":"effective_status","operator":"IN","value":["ACTIVE"]}]` +
+      `&limit=500`;
+
+    const adsRes = await metaFetch(adsUrl, token);
+    const activeAds: { id: string; adset_id: string }[] = adsRes.data || [];
+    const adsetIdsWithActiveAds = new Set(activeAds.map((ad) => ad.adset_id));
+
+    // Step 4: Build campaign data with correct budgets (only ad sets with active ads)
+    // Group ad sets by campaign — only include ad sets that have at least one active ad
     const adsetsByCampaign: Record<string, MetaAdSet[]> = {};
     for (const adset of adsets) {
+      if (!adsetIdsWithActiveAds.has(adset.id)) continue; // skip ad sets with no active ads
       if (!adsetsByCampaign[adset.campaign_id]) {
         adsetsByCampaign[adset.campaign_id] = [];
       }
@@ -124,9 +136,14 @@ export async function GET(request: NextRequest) {
       const campaignBudget = parseFloat(campaign.daily_budget || "0") / 100; // Meta returns in cents
       const insight = parseInsight(campaign.insights?.data?.[0]);
       const collection = detectCollection(campaign.name);
+      const campAdsets = adsetsByCampaign[campaign.id] || [];
+
+      // Skip campaigns that have zero active ads
+      if (campAdsets.length === 0 && campaignBudget === 0) continue;
 
       if (campaignBudget > 0) {
-        // Campaign has its own budget
+        // Campaign-level budget (CBO) — only count if it has active ads
+        if (campAdsets.length === 0) continue;
         result.push({
           campaign_name: campaign.name,
           campaign_id: campaign.id,
@@ -143,12 +160,12 @@ export async function GET(request: NextRequest) {
           collection,
         });
       } else {
-        // Budget is at ad set level — sum up ad set budgets
-        const campAdsets = adsetsByCampaign[campaign.id] || [];
+        // Budget is at ad set level — sum only ad sets with active ads
         const totalAdsetBudget = campAdsets.reduce(
           (sum, as) => sum + parseFloat(as.daily_budget || "0") / 100,
           0
         );
+        if (totalAdsetBudget === 0 && insight.spend === 0) continue;
 
         result.push({
           campaign_name: campaign.name,

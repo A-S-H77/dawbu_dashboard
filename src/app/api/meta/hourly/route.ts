@@ -49,7 +49,6 @@ export async function GET(request: NextRequest) {
       `&breakdowns=hourly_stats_aggregated_by_advertiser_time_zone` +
       `&fields=campaign_name,campaign_id,spend,impressions,clicks,ctr,cpm,actions,purchase_roas` +
       `&level=campaign` +
-      `&filtering=[{"field":"campaign_delivery_info","operator":"IN","value":["active"]}]` +
       `&limit=1000`;
 
     let campaignHourly: Record<string, unknown>[] = [];
